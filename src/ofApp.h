@@ -22,9 +22,14 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+        bool isVowel(const char& c);
     
         void setupArduino(const int & version);
         void digitalPinChanged(const int & pinNum);
+    
+        const static int ROWS = 10;
+        const static int COLS = 10;
+        
     
         std::string getFortune();
 private:

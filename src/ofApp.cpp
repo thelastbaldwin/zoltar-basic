@@ -19,15 +19,17 @@ void ofApp::setup(){
     
     //video setup
     fortuneVideo.load("movies/crystal_ball.mp4");
-    fortuneVideo.setLoopState(OF_LOOP_NONE);
-    
-    cout << getFortune() << endl;
+    fortuneVideo.setLoopState(OF_LOOP_NORMAL);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    ard.update();
-    fortuneVideo.update();
+    if(ard.isInitialized()){
+        ard.update();
+    }
+    if(fortuneVideo.isLoaded()){
+        fortuneVideo.update();
+    }
 }
 
 //--------------------------------------------------------------
@@ -57,7 +59,9 @@ void ofApp::setupArduino(const int & version) {
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    fortuneVideo.draw(0, 0, ofGetWidth(), ofGetHeight());
+    if(fortuneVideo.isLoaded() && fortuneVideo.getTexture().isAllocated()){
+        fortuneVideo.draw(0, 0, ofGetWidth(), ofGetHeight());
+    }
 }
 
 // digital pin event handler, called whenever a digital pin value has changed
@@ -75,13 +79,28 @@ void ofApp::digitalPinChanged(const int & pinNum) {
     }
 }
 
+bool ofApp::isVowel(const char &c){
+    return(c == 'a' || c == 'e' || c == 'i' || c == 'o' || 'c' == 'u' || c == 'y');
+}
+
 std::string ofApp::getFortune(){
-    return vocabulary::nouns[5];
+    auto noun = vocabulary::nouns[rand() % vocabulary::nouns.size()];
+    auto verb = vocabulary::verbs[rand() % vocabulary::verbs.size()];
+    auto adjective = vocabulary::adjectives[rand() % vocabulary::adjectives.size()];
+    
+    // the stars have spoken
+    // you will <verb> an <adjective> <noun>
+    stringstream ss;
+    ss << "The stars have spoken." << endl;
+    ss << "You will " << verb << (isVowel(adjective[0])? " an " : " a ") << adjective << " " << noun << "." << endl;
+    
+    return ss.str();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    fortuneVideo.play();
+    cout << getFortune() << endl;
 }
 
 //--------------------------------------------------------------
