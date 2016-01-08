@@ -3,6 +3,13 @@
 #include "ofMain.h"
 #include "ofEvents.h"
 #include "vocabulary.h"
+#include "ofxTimer.h"
+
+enum States {
+    WAITING,
+    POSTULATING,
+    DELIVERY
+};
 
 class ofApp : public ofBaseApp{
 
@@ -27,14 +34,24 @@ class ofApp : public ofBaseApp{
         void setupArduino(const int & version);
         void digitalPinChanged(const int & pinNum);
     
-        const static int ROWS = 10;
-        const static int COLS = 10;
-        
-    
         std::string getFortune();
-private:
+        void initiateSequence();
+    
+        void timerFinished(ofEventArgs& arg);
+    
+    private:
         bool		bSetupArduino;
         ofArduino	ard;
         string buttonState;
         ofVideoPlayer fortuneVideo;
+        ofTrueTypeFont courier;
+        std::string fortuneText;
+        std::string outputText;
+        const int letterShuffleCount = 8;
+        int shuffleIndex;
+        int letterIndex;
+        int     opacity;
+        States state;
+        ofxTimer messageTimeout;
+        float messageTimeoutAmt;
 };

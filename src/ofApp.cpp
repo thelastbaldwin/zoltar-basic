@@ -1,5 +1,7 @@
 #include "ofApp.h"
 
+
+
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofSetVerticalSync(true);
@@ -17,9 +19,23 @@ void ofApp::setup(){
     ofAddListener(ard.EInitialized, this, &ofApp::setupArduino);
     bSetupArduino	= false;	// flag so we setup arduino when its ready, you don't need to touch this :)
     
+    //message setup
+    courier.load("ufonts.com_courier.ttf", 16);
+    courier.setLineHeight(16 * 1.4);
+    shuffleIndex = 0;
+    letterIndex = 0;
+    //10 seconds
+    messageTimeoutAmt = 5000;
+    
+    //attach a listener for the timer
+    ofAddListener(messageTimeout.TIMER_REACHED, this, &ofApp::timerFinished);
+    
     //video setup
-    fortuneVideo.load("movies/crystal_ball.mp4");
-    fortuneVideo.setLoopState(OF_LOOP_NORMAL);
+    fortuneVideo.load("movies/sg_animation.mov");
+    fortuneVideo.setLoopState(OF_LOOP_NONE);
+    opacity = 0;
+    
+    state = WAITING;
 }
 
 //--------------------------------------------------------------
@@ -27,8 +43,13 @@ void ofApp::update(){
     if(ard.isInitialized()){
         ard.update();
     }
-    if(fortuneVideo.isLoaded()){
+    if(fortuneVideo.isLoaded() && fortuneVideo.isInitialized()){
         fortuneVideo.update();
+    }
+    if(fortuneVideo.getIsMovieDone() && state != DELIVERY){
+        fortuneVideo.setPaused(true);
+        state = DELIVERY;
+        messageTimeout.setup(messageTimeoutAmt, false);
     }
 }
 
@@ -59,8 +80,24 @@ void ofApp::setupArduino(const int & version) {
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    if(fortuneVideo.isLoaded() && fortuneVideo.getTexture().isAllocated()){
+    ofBackground(0);
+    if(state == WAITING){
+        courier.drawString("Touch the screen and\n reveal your future", ofGetWidth()/2-100, ofGetHeight()/2 - 10);
+    }
+    if(state == POSTULATING && fortuneVideo.isLoaded() && fortuneVideo.getTexture().isAllocated()){
         fortuneVideo.draw(0, 0, ofGetWidth(), ofGetHeight());
+    }
+    if(state == DELIVERY){
+        ofEnableAlphaBlending();
+        ofSetColor(255, 255, 255, opacity);
+//        ofRectangle(0, 0, ofGetWidth(), ofGetHeight());
+        fortuneVideo.draw(0, 0, ofGetWidth(), ofGetHeight());
+                ofSetColor(255, 255, 255, 255.0);
+        courier.drawString(fortuneText, ofGetWidth()/2 - 175, ofGetHeight()/2 - 10);
+
+        if(opacity > 0){
+            opacity -= 5;
+        }
     }
 }
 
@@ -87,20 +124,38 @@ std::string ofApp::getFortune(){
     auto noun = vocabulary::nouns[rand() % vocabulary::nouns.size()];
     auto verb = vocabulary::verbs[rand() % vocabulary::verbs.size()];
     auto adjective = vocabulary::adjectives[rand() % vocabulary::adjectives.size()];
+    auto luckyNum = rand() % 255;
     
     // the stars have spoken
     // you will <verb> an <adjective> <noun>
     stringstream ss;
     ss << "The stars have spoken." << endl;
     ss << "You will " << verb << (isVowel(adjective[0])? " an " : " a ") << adjective << " " << noun << "." << endl;
+    ss << "Your lucky number is " << luckyNum << ".";
     
     return ss.str();
 }
 
+void ofApp::initiateSequence(){
+    messageTimeout.pauseTimer();
+    opacity = 255;
+    state = POSTULATING;
+    if(!fortuneVideo.isPlaying()){
+        //        fortuneVideo.setPosition(0.0);
+        fortuneVideo.play();
+    }
+    fortuneText = getFortune();
+}
+
+void ofApp::timerFinished(ofEventArgs &args){
+    cout << "finished" << endl;
+    state = WAITING;
+    fortuneVideo.stop();
+}
+
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-    fortuneVideo.play();
-    cout << getFortune() << endl;
+    initiateSequence();
 }
 
 //--------------------------------------------------------------
@@ -120,7 +175,7 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    initiateSequence();
 }
 
 //--------------------------------------------------------------
